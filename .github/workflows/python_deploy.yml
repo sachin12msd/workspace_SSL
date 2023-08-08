@@ -21,4 +21,4 @@ jobs:
       
 
       - name: Run Python app
-        run: pearl.py
+        run: python pearl.py
