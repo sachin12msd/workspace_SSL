@@ -24,5 +24,5 @@ jobs:
           pip install requests
 
       - name: Run SSL expiry check
-        run: python /home/ubuntu/day3/task1/py-script.py
+        run: python /home/ubuntu/day3/task1
 
