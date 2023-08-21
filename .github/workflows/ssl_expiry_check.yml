@@ -24,4 +24,4 @@ jobs:
           pip install requests
 
       - name: Run Custom SSL Check
-        run: python /home/ubuntu/day3/task1/py-script.py
+        run: python pearlthoughts/py-script.py
