@@ -1,27 +1,44 @@
-name: Custom SSL Check
+name: Check SSL Expiry
 
 on:
   schedule:
-    - cron: "0 0 * * *"
-  workflow_dispatch:
+    - cron: '55 16 * * *'  # Schedule to run daily at 4:55 pm
+  workflow_dispatch:     # Manual triggering
 
 jobs:
-  custom_ssl_check:
+  check-ssl:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
         with:
-          python-version: 3.8
-
+          node-version: 16
+      
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests
+        run: npm install axios
 
-      - name: Run Custom SSL Check
-        run: python /home/ubuntu/day3/task1/py-script.py
+      - name: Get domain names from secrets
+        run: |
+          DOMAIN_SECRETS=$(env | grep 'DOMAIN_' | cut -d= -f2-)
+          IFS=$'\n' DOMAINS=($DOMAIN_SECRETS)
+
+      - name: Run SSL check and send alerts
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          for DOMAIN in "${DOMAINS[@]}"; do
+            EXPIRY_DATE=$(openssl s_client -connect $DOMAIN:443 -servername $DOMAIN 2>/dev/null | openssl x509 -noout -enddate | awk -F'=' '{print $2}')
+            if [ -z "$EXPIRY_DATE" ]; then
+              SLACK_MESSAGE="{\"text\":\"SSL Expiry Alert\\n* Domain : $DOMAIN\\n* Warning : Unable to retrieve SSL expiry information for $DOMAIN.\"}"
+            else
+              EXPIRY_TIMESTAMP=$(date -d "$EXPIRY_DATE" +%s)
+              CURRENT_TIMESTAMP=$(date +%s)
+              DAYS_LEFT=$(( ($EXPIRY_TIMESTAMP - $CURRENT_TIMESTAMP) / 86400 ))
+              SLACK_MESSAGE="{\"text\":\"SSL Expiry Alert\\n* Domain : $DOMAIN\\n* Warning : The SSL certificate for $DOMAIN will expire in $DAYS_LEFT days.\"}"
+            fi
+            curl -X POST -H 'Content-type: application/json' --data "$SLACK_MESSAGE" $SLACK_WEBHOOK_URL
+          done
