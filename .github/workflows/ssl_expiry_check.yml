@@ -1,4 +1,4 @@
-name: SSL Expiry Check
+name: Custom SSL Check
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  ssl_expiry_check:
+  custom_ssl_check:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,8 +23,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Run SSL expiry check
-        run: python /home/ubuntu/day3/task1/py-script.py
-
-
-
+      - name: Run Custom SSL Check
+        run: python path/to/your/custom_script.py
